@@ -1,2 +1,30 @@
+# Misc
 .DS_Store
 *.txt
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Compiled avr-gcc files
+*.elf
+*.eps
+*.png
+*.pdf
+*.bak 
+*.lst
+*.map
+*.hex
+*.bin
+*.srec
+
