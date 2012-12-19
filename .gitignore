@@ -11,3 +11,15 @@
 *.lai
 *.la
 *.a
+
+# Compiled avr-gcc files
+*.elf
+*.eps
+*.png
+*.pdf
+*.bak 
+*.lst
+*.map
+*.hex
+*.bin
+*.srec
