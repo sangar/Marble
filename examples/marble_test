@@ -1,0 +1,115 @@
+#include "MarbleMain.h"
+
+DigitalIn button1(10);
+
+DigitalOut led1(19);
+DigitalOut led2(20);
+
+AnalogIn in(A1);
+AnalogIn temp(A2);
+AnalogIn itemp(TEMP);
+AnalogOut aled(7);
+
+long map(long x, long in_min, long in_max, long out_min, long out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void printNumber(unsigned long n, uint8_t base) {
+	char buf[8 * sizeof(long) + 1]; // Assumes 8-bit chars plus zero byte.
+	char *str = &buf[sizeof(buf) - 1];
+
+	*str = '\0';
+
+	// prevent crash if called with base == 1
+	if (base < 2) base = 10;
+
+	do {
+		unsigned long m = n;
+ 		n /= base;
+ 		char c = m - base * n;
+ 		*--str = c < 10 ? c + '0' : c + 'A' - 10;
+	} while(n);
+
+	Serial.println(str);
+}
+
+void printVal(const char *lbl, uint16_t val) {
+	Serial.print(lbl);
+	printNumber(val, 10);
+}
+
+
+uint16_t lastTemp = 0, lastItemp = 0;
+uint8_t buffer[16];
+
+uint16_t averageVal() {
+	long avgVal = 0;
+	for (int i=0; i<1000; i++)
+		avgVal += temp.value();
+	return avgVal/1000;
+}
+
+uint8_t readTemp(void) {
+	uint16_t val = averageVal();
+	float voltage = val * 5.0;
+	voltage /= 1024.0;
+	
+	return ((voltage-0.5) * 100);
+}
+
+/*
+ * Main methods
+ */
+void MarbleMain::setup() {
+	led1.write(LOW);
+	led2.write(HIGH);
+	aled.setValue(LOW);
+	
+	Serial.link();
+}
+
+void MarbleMain::loop() {
+	uint8_t i=0;
+	
+	while (Serial.readable() > 0) {
+		uint8_t c = Serial.read();
+		if (c == '\n') {
+			buffer[i] = '\0';
+		} else {
+			buffer[i++] = c;
+		}
+	}
+	if (i > 0) {
+		Serial.println((const char *)buffer);
+	}
+	
+	uint16_t n = in.value();
+	n = map(n, 0, 1023, 0, 255);
+	aled.setValue(n);
+	
+	if (button1.state() == HIGH) {
+		led1.flip();
+		led2.flip();
+		
+		_delay_ms(500);
+	}
+	
+	
+	uint8_t tempC = readTemp();
+	if (tempC != lastTemp) {
+		printVal("Temp: ", tempC);
+		lastTemp = tempC;
+	}
+/*	
+	val = itemp.value();
+	voltage = val * 1.1;
+	voltage /= 1024.0;
+	
+	uint8_t itempC = ((voltage-0.5) * 100);
+	if (itempC != lastItemp) {
+		printVal("ITemp: ", itempC);
+		lastItemp = itempC;
+	}
+*/	
+	_delay_ms(10);
+}

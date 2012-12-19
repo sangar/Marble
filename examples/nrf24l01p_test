@@ -1,0 +1,79 @@
+#include "MarbleMain.h"
+
+#include "nRF24L01P.h"
+
+#define TRANSFER_SIZE   4
+
+const int CSN = 17;
+const int CE = 18;
+
+nRF24L01P my_nrf24l01p(MOSI, MISO, SCK, CSN, CE, 0);
+
+char txData[TRANSFER_SIZE], rxData[TRANSFER_SIZE];
+int txDataCnt = 0;
+int rxDataCnt = 0;
+
+/*
+ * Main methods
+ */
+void MarbleMain::setup() {
+	Serial.link();
+	
+	my_nrf24l01p.powerUp();
+	_delay_ms(1000);
+	
+	// Display the (default) setup of the nRF24L01+ chip
+	Serial.printf("nRF24L01+ Frequency    : %d MHz\n\r", my_nrf24l01p.getRfFrequency());
+	Serial.printf("nRF24L01+ Output power : %d dBm\n\r", my_nrf24l01p.getRfOutputPower());
+	Serial.printf("nRF24L01+ Data Rate    : %d kbps\n\r", my_nrf24l01p.getAirDataRate());
+	unsigned long long txaddr = my_nrf24l01p.getTxAddress();
+	unsigned long long rxaddr = my_nrf24l01p.getRxAddress();
+	Serial.printf("nRF24L01+ TX Address   : 0x%2lX%8lX\n\r", ((unsigned long *) &txaddr)[1], ((unsigned long *) &txaddr)[0]);
+	Serial.printf("nRF24L01+ RX Address   : 0x%2lX%8lX\n\r", ((unsigned long *) &rxaddr)[1], ((unsigned long *) &rxaddr)[0]);
+
+	Serial.printf("Type keys to test transfers:\r\n  (transfers are grouped into %d characters)\n\r", TRANSFER_SIZE);
+
+	my_nrf24l01p.setTransferSize( TRANSFER_SIZE );
+
+	my_nrf24l01p.setReceiveMode();
+	my_nrf24l01p.enable();
+}
+
+int count = 0;
+
+void MarbleMain::loop() {
+	// If we've received anything over the host serial link...
+	if ( Serial.readable() > 0) {
+
+	    // ...add it to the transmit buffer
+	    txData[txDataCnt++] = Serial.read();
+	    Serial.println("Data written to buffer.");
+
+	    // If the transmit buffer is full
+	    if ( txDataCnt >= sizeof( txData ) ) {
+
+	        // Send the transmitbuffer via the nRF24L01+
+	        my_nrf24l01p.write( NRF24L01P_PIPE_P0, txData, txDataCnt );
+	        Serial.println("Data written to radio.");
+
+	        txDataCnt = 0;
+	    }
+	}
+
+	// If we've received anything in the nRF24L01+...
+	if ( my_nrf24l01p.readable() ) {
+
+	    // ...read the data into the receive buffer
+	    rxDataCnt = my_nrf24l01p.read( NRF24L01P_PIPE_P0, rxData, sizeof( rxData ) );
+
+	    // Display the receive buffer contents via the host serial link
+	    for ( int i = 0; rxDataCnt > 0; rxDataCnt--, i++ ) {
+
+	        Serial.write( rxData[i] );
+	    }
+
+	    // to help debug nRF24L01+ -> Host communication
+		Serial.println();
+	    Serial.println("Data read from buffer.");
+	}
+}
