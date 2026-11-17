@@ -1,0 +1,21 @@
+{
+  "name": "marble-bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/bridge.ts",
+    "test": "node --test src/protocol.test.ts",
+    "check": "tsc"
+  },
+  "dependencies": {
+    "@matter/main": "^0.18.0",
+    "serialport": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "@serialport/bindings-cpp": false
+  }
+}
